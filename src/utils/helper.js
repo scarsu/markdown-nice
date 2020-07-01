@@ -82,7 +82,7 @@ export const markdownParserWechat = new MarkdownIt({
 
 markdownParserWechat
   .use(markdownItSpan) // 在标题标签中添加span
-  .use(markdownItTableWrap) // 在标题标签中添加span
+  .use(markdownItTableWrap) // 在表格外部添加容器
   .use(markdownItRemovepre) // 移除代码段中的 pre code
   .use(markdownItMath) // 数学公式
   .use(markdownItLinkfoot) // 修改脚注
