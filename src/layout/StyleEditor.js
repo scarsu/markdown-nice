@@ -19,6 +19,7 @@ class StyleEditor extends Component {
   constructor(props) {
     super(props);
     this.focus = false;
+    this.modalShowed = false;
   }
 
   getStyleInstance = (instance) => {
@@ -33,6 +34,11 @@ class StyleEditor extends Component {
   };
 
   showConfirm = () => {
+    if (this.modalShowed) {
+      return;
+    } else {
+      this.modalShowed = true;
+    }
     Modal.confirm({
       title: "是否想使用该模板？",
       content: "确定后将复制当前内容和样式并切换为自定义",
@@ -45,12 +51,16 @@ class StyleEditor extends Component {
         const style = `/*自定义样式，实时生效*/\n\n` + css;
         this.props.content.setCustomStyle(style);
         this.props.navbar.setTemplateNum(themeList.length - 1);
+        this.modalShowed = false;
       },
-      onCancel: () => {},
+      onCancel: () => {
+        this.modalShowed = false;
+      },
     });
   };
 
   changeStyle = (editor) => {
+    console.log("change");
     const {templateNum} = this.props.navbar;
     const {themeList} = this.props.content;
     // focus状态很重要，初始化时被调用则不会进入条件
