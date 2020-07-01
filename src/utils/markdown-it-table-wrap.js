@@ -6,52 +6,84 @@ function slugify(s, md) {
 
 function makeRule(md, options) {
   return function addHeadingAnchors(state) {
-    var insertMap = new Map();
-
     if (!options.tableWrap) {
       return;
     }
 
-    performance.mark("table1-start");
-
+    /*
+     * 方法一:
+     * 先将需要增加的节点添加到map中
+     * map的键是idx:标识当前节点的索引
+     * pre标识:标识新增的节点需要添添加在当前节点之前还是之后
+     * 性能监控: 耗时平均0.179ms
+     */
+    var arr = [];
+    performance.mark("handle-start");
     for (var i = 0; i < state.tokens.length; i++) {
-      if (state.tokens[i].type === "table_open") {
-        var tableWrap = new state.Token("html_inline", "", 0);
-        tableWrap.content = `<figure class="table_wrap">`;
-        insertMap.set(i, {
-          pre: true,
-          val: tableWrap,
-        });
-      } else if (state.tokens[i].type === "table_close") {
+      var curToken = state.tokens[i];
+      if (curToken.type === "table_open") {
+        var tableWrapStart = new state.Token("html_inline", "", 0);
+        tableWrapStart.content = `<figure class="table_wrap">`;
+        arr.push(tableWrapStart);
+        arr.push(curToken);
+      } else if (curToken.type === "table_close") {
         var tableWrapClose = new state.Token("html_inline", "", 0);
         tableWrapClose.content = `</figure>`;
-        insertMap.set(i, {
-          pre: false,
-          val: tableWrapClose,
-        });
+        arr.push(curToken);
+        arr.push(tableWrapClose);
       } else {
-        continue;
+        arr.push(curToken);
       }
     }
-    debugger;
-    var arr = [];
-    insertMap.forEach((val, idx) => {
-      if (idx === 0) {
-        arr.unshift(insertMap[idx]);
-      } else if (idx === state.tokens.length) {
-        arr.push(insertMap[idx]);
-      } else {
-        arr = state.tokens
-          .slice(0, idx)
-          .concat(insertMap[idx])
-          .concat(arr.slice(idx));
-      }
-    });
-    performance.mark("table1-end");
-    performance.measure("table1", "table1-start", "table1-end");
-
-    console.log("table1============" + performance.getEntriesByName("table1")[0].duration);
+    performance.mark("handle-end");
+    performance.measure("handle", "handle-start", "handle-end");
+    console.log("handle============" + performance.getEntriesByName("handle")[0].duration);
     state.tokens = arr;
+
+    /*
+     * 方法二:
+     * 先将需要增加的节点添加到map中,再用slice拼起来
+     * map的键是idx:标识当前节点的索引
+     * pre标识:标识新增的节点需要添添加在当前节点之前还是之后
+     * 性能监控: 耗时平均23.53ms,11.07ms
+     */
+    // var patchMap = new Map();
+    // performance.mark("handle-start");
+    // for (var i = 0; i < state.tokens.length; i++) {
+    //   var curToken = state.tokens[i];
+    //   if (curToken.type === "table_open") {
+    //     var tableWrap = new state.Token("html_inline", "", 0);
+    //     tableWrap.content = `<figure class="table_wrap">`;
+    //     patchMap.set(i, {
+    //       pre: true,
+    //       val: tableWrap,
+    //     });
+    //   } else if (curToken.type === "table_close") {
+    //     var tableWrapClose = new state.Token("html_inline", "", 0);
+    //     tableWrapClose.content = `</figure>`;
+    //     patchMap.set(i, {
+    //       pre: false,
+    //       val: tableWrapClose,
+    //     });
+    //   } else {
+    //     continue;
+    //   }
+    // }
+    // var arr = [];
+    // var lastIdx = 0;
+    // patchMap.forEach((item, idx) => {
+    //   if (item.pre) {
+    //     arr.push(...state.tokens.slice(lastIdx, idx));
+    //   } else {
+    //     arr.push(...state.tokens.slice(lastIdx, idx + 1));
+    //   }
+    //   arr.push(item.val);
+    //   lastIdx = idx;
+    // });
+    // performance.mark("handle-end");
+    // performance.measure("handle", "handle-start", "handle-end");
+    // console.log("handle============" + performance.getEntriesByName("handle")[0].duration);
+    // state.tokens = arr;
   };
 }
 
